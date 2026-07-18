@@ -79,6 +79,9 @@ built client and handles `/api/token` — free tier is more than enough.
 - `DISCORD_CLIENT_SECRET` — stored as a Worker secret
   (`grep ^DISCORD_CLIENT_SECRET= .env | cut -d= -f2- | npx wrangler secret put DISCORD_CLIENT_SECRET`)
 - Redeploy after changes: `npm run deploy` (builds the client, then `wrangler deploy`)
+- CI: pushes to `main` auto-deploy via `.github/workflows/deploy.yml`
+  (needs repo secret `CLOUDFLARE_API_TOKEN`; vars `VITE_DISCORD_CLIENT_ID`
+  and `CLOUDFLARE_ACCOUNT_ID` are already set)
 
 Live URL: `https://globle-activity.globle-clarissa.workers.dev` — point the
 dev-portal **URL Mapping** `/` at `globle-activity.globle-clarissa.workers.dev`.
