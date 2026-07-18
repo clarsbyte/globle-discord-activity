@@ -1,0 +1,9 @@
+name = "globle-activity"
+main = "worker.js"
+compatibility_date = "2025-06-01"
+
+[assets]
+directory = "./client/dist"
+
+[vars]
+VITE_DISCORD_CLIENT_ID = "1528164846036713483"
