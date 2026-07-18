@@ -32,7 +32,7 @@ export async function setupDiscord() {
   if (auth == null) {
     throw new Error("Authenticate command failed");
   }
-  return auth.user;
+  return { user: auth.user, channelId: discordSdk.channelId };
 }
 
 export function avatarUrl(user) {

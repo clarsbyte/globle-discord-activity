@@ -34,12 +34,16 @@ const heatColorFor = (proximity) => {
   return stops[stops.length - 1][1];
 };
 
-export function startGame(rootEl, userPromise) {
-  // Resolved Discord user (null in browser dev mode)
+export function startGame(rootEl, sessionPromise) {
+  // Resolved Discord session { user, channelId }, null in browser dev mode
   let displayName = null;
-  if (userPromise) {
-    userPromise.then((u) => {
-      if (u) displayName = u.global_name ?? u.username;
+  let channelId = null;
+  if (sessionPromise) {
+    sessionPromise.then((s) => {
+      if (s) {
+        displayName = s.user.global_name ?? s.user.username;
+        channelId = s.channelId;
+      }
     }).catch(() => {});
   }
 
@@ -121,7 +125,6 @@ export function startGame(rootEl, userPromise) {
     const { distance, proximity } = proximityOf(feature, answer);
     const correct = feature === answer;
     guesses.push({ feature, distance, proximity: correct ? 1 : proximity });
-    guesses.sort((a, b) => b.proximity - a.proximity);
 
     if (correct) {
       isWon = true;
@@ -148,7 +151,8 @@ export function startGame(rootEl, userPromise) {
 
   function renderGuessList() {
     guessList.innerHTML = "";
-    for (const g of guesses) {
+    const sorted = guesses.slice().sort((a, b) => b.proximity - a.proximity);
+    for (const g of sorted) {
       const li = document.createElement("li");
       li.className = "guess-row";
       const pct = Math.round(g.proximity * 100);
@@ -170,8 +174,7 @@ export function startGame(rootEl, userPromise) {
   }
 
   function shareText() {
-    const ordered = guesses.slice().reverse();
-    const rows = ordered.map((g) => squaresFor(g.proximity)).join("");
+    const rows = guesses.map((g) => squaresFor(g.proximity)).join("");
     const who = displayName ?? "I";
     const label = mode === "daily" ? `Globle ${todayString()}` : "Globle (free play)";
     return `🌍 ${label} — ${who} guessed in ${guesses.length} guess${guesses.length === 1 ? "" : "es"}\n${rows}`;
@@ -217,6 +220,23 @@ export function startGame(rootEl, userPromise) {
     `;
     winBanner.classList.remove("hidden");
     setMessage("");
+
+    // Post the result to the channel as the bot (Discord mode only)
+    if (channelId && displayName) {
+      const rows = guesses.map((g) => squaresFor(g.proximity)).join("");
+      fetch("/api/share-result", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          channel_id: channelId,
+          content: `${displayName} guessed in ${n} guess${n === 1 ? "" : "es"}\n${rows}`,
+        }),
+      })
+        .then((r) => {
+          if (!r.ok) console.error("share-result failed", r.status);
+        })
+        .catch((err) => console.error("share-result failed", err));
+    }
     winBanner.querySelector("#share-btn").addEventListener("click", async (e) => {
       const btn = e.currentTarget;
       const ok = await copyText(shareText());

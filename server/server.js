@@ -31,6 +31,29 @@ app.post("/api/token", async (req, res) => {
   res.send({ access_token });
 });
 
+// Post the player's result to the channel as the bot
+app.post("/api/share-result", async (req, res) => {
+  const { channel_id, content } = req.body ?? {};
+  if (
+    typeof channel_id !== "string" ||
+    !/^\d+$/.test(channel_id) ||
+    typeof content !== "string" ||
+    content.length === 0 ||
+    content.length > 300
+  ) {
+    return res.status(400).send({ error: "bad request" });
+  }
+  const r = await fetch(`https://discord.com/api/v10/channels/${channel_id}/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ content, allowed_mentions: { parse: [] } }),
+  });
+  res.status(r.status).send(await r.json());
+});
+
 app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);
 });

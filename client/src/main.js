@@ -38,19 +38,20 @@ async function main() {
   }
 
   // Authenticate with Discord when running as an Activity; in a plain
-  // browser we skip auth and run in dev mode.
-  const userPromise = setupDiscord()
-    .then((user) => {
-      if (user) renderHeader(user);
-      console.log(user ? "Discord SDK is authenticated" : "Browser dev mode (not in Discord)");
-      return user;
+  // browser we skip auth and run in dev mode. Resolves to
+  // { user, channelId } in Discord, or null in the browser.
+  const sessionPromise = setupDiscord()
+    .then((session) => {
+      if (session) renderHeader(session.user);
+      console.log(session ? "Discord SDK is authenticated" : "Browser dev mode (not in Discord)");
+      return session;
     })
     .catch((err) => {
       console.error("Discord auth failed", err);
       return null;
     });
 
-  startGame(app, userPromise);
+  startGame(app, sessionPromise);
 }
 
 main();
